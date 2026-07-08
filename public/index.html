@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>기분샵 — 사는 기분만 내는 곳</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <header class="topbar">
+    <h1 class="logo">기분<span>샵</span></h1>
+    <p class="tagline">진짜 상품 · 가짜 결제 · 진짜 기분</p>
+    <button id="cartBtn" class="cart-btn">
+      🛒 <span id="cartCount">0</span>
+    </button>
+  </header>
+
+  <section class="search-area">
+    <input id="searchInput" type="text" placeholder="예: 나이키 신발, 무선이어폰, 텀블러..." />
+    <button id="searchBtn">검색</button>
+  </section>
+
+  <p id="statusMsg" class="status-msg"></p>
+
+  <main id="grid" class="grid"></main>
+
+  <!-- 장바구니 패널 -->
+  <aside id="cartPanel" class="cart-panel hidden">
+    <div class="cart-header">
+      <h2>장바구니</h2>
+      <button id="closeCart">✕</button>
+    </div>
+    <div id="cartItems" class="cart-items"></div>
+    <div class="cart-footer">
+      <div class="cart-total">
+        총액 <strong id="cartTotal">0원</strong>
+      </div>
+      <button id="checkoutBtn" class="checkout-btn">구매하기 (가짜)</button>
+    </div>
+  </aside>
+  <div id="overlay" class="overlay hidden"></div>
+
+  <!-- 가짜 결제 완료 화면 -->
+  <div id="receiptModal" class="receipt-modal hidden">
+    <div class="receipt-card">
+      <div class="confetti" id="confetti"></div>
+      <h2>주문 완료! 🎉</h2>
+      <p class="receipt-sub">(실제로 결제되거나 배송되지 않아요)</p>
+      <div id="receiptList" class="receipt-list"></div>
+      <div class="receipt-total">총 결제금액(가짜) <strong id="receiptTotal">0원</strong></div>
+      <button id="closeReceipt" class="close-receipt-btn">닫기</button>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
