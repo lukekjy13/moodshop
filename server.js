@@ -42,6 +42,8 @@ function cleanTitle(title) {
 // 핵심 API: /api/search?query=신발
 app.get("/api/search", async (req, res) => {
   const query = req.query.query;
+  // sort: sim=정확도순, asc=낮은가격순, dsc=높은가격순 (프론트에서 "추천" 만들 때 asc로도 요청함)
+  const sort = ["sim", "asc", "dsc"].includes(req.query.sort) ? req.query.sort : "sim";
 
   if (!query) {
     return res.status(400).json({ error: "query 파라미터가 필요해요" });
@@ -50,8 +52,8 @@ app.get("/api/search", async (req, res) => {
   try {
     const url = new URL("https://openapi.naver.com/v1/search/shop.json");
     url.searchParams.set("query", query);
-    url.searchParams.set("display", "100"); // 최대 몇 개 가져올지
-    url.searchParams.set("sort", "sim"); // sim=정확도순, asc=낮은가격순, dsc=높은가격순
+    url.searchParams.set("display", "20"); // 최대 몇 개 가져올지
+    url.searchParams.set("sort", sort);
 
     const naverRes = await fetch(url, {
       headers: {
