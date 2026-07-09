@@ -52,7 +52,7 @@ app.get("/api/search", async (req, res) => {
   try {
     const url = new URL("https://openapi.naver.com/v1/search/shop.json");
     url.searchParams.set("query", query);
-    url.searchParams.set("display", "20"); // 최대 몇 개 가져올지
+    url.searchParams.set("display", "100"); // 최대 몇 개 가져올지
     url.searchParams.set("sort", sort);
 
     const naverRes = await fetch(url, {
