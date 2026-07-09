@@ -38,6 +38,7 @@ const searchInput = document.getElementById("searchInput");
 const searchBtn = document.getElementById("searchBtn");
 const statusMsg = document.getElementById("statusMsg");
 
+const dealsSection = document.getElementById("dealsSection");
 const dealsGrid = document.getElementById("dealsGrid");
 const resultsSection = document.getElementById("resultsSection");
 const resultsTitle = document.getElementById("resultsTitle");
@@ -171,6 +172,7 @@ async function search() {
   if (!query) return;
 
   statusMsg.textContent = "검색 중...";
+  dealsSection.classList.add("hidden");
   resultsSection.classList.remove("hidden");
   recommendSection.classList.add("hidden");
   grid.innerHTML = "";
@@ -532,11 +534,23 @@ function renderOrders() {
 // ---------------------------------------------------------
 // 11. 탭 전환
 // ---------------------------------------------------------
+function resetHomeView() {
+  searchInput.value = "";
+  statusMsg.textContent = "";
+  dealsSection.classList.remove("hidden");
+  resultsSection.classList.add("hidden");
+  recommendSection.classList.add("hidden");
+  grid.innerHTML = "";
+  recommendGrid.innerHTML = "";
+}
+
 function switchTab(tab) {
+  const wasAlreadyHome = tab === "home" && !pageHome.classList.contains("hidden");
   navTabs.forEach((t) => t.classList.toggle("active", t.dataset.tab === tab));
   pageHome.classList.toggle("hidden", tab !== "home");
   pageTracking.classList.toggle("hidden", tab !== "tracking");
   if (tab === "tracking") renderOrders();
+  if (tab === "home" && wasAlreadyHome) resetHomeView(); // 홈 탭 다시 누르면 특가 화면으로 복귀
 }
 
 // ---------------------------------------------------------
