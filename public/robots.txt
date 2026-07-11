@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://moodshop.onrender.com/sitemap.xml
