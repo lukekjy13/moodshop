@@ -3,45 +3,155 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="icon" type="image/svg+xml" href="favicon.svg" />
 <title>기분샵 — 사는 기분만 내는 곳</title>
+<meta name="description" content="기분샵 - 네이버 쇼핑 실시간 상품으로 사는 기분만 내보는 가짜 쇼핑몰. 실제 결제·배송 없음." />
 <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
   <header class="topbar">
     <h1 class="logo">기분<span>샵</span></h1>
-    <p class="tagline">진짜 상품 · 가짜 결제 · 진짜 기분</p>
-    <button id="cartBtn" class="cart-btn">
-      🛒 <span id="cartCount">0</span>
-    </button>
+    <nav class="nav-tabs">
+      <button class="nav-tab active" data-tab="home">홈</button>
+      <button class="nav-tab" data-tab="wishlist">찜 <span id="wishCount" class="tab-badge">0</span></button>
+      <button class="nav-tab" data-tab="tracking">배송조회</button>
+    </nav>
+    <div class="topbar-actions">
+      <button id="couponBtn" class="icon-btn" title="내 쿠폰함">🎟️ <span id="couponCount">0</span></button>
+      <button id="cartBtn" class="icon-btn" title="장바구니">🛒 <span id="cartCount">0</span></button>
+    </div>
   </header>
 
-  <section class="search-area">
-    <input id="searchInput" type="text" placeholder="예: 나이키 신발, 무선이어폰, 텀블러..." />
-    <button id="searchBtn">검색</button>
-  </section>
-
-  <p id="statusMsg" class="status-msg"></p>
-
-  <main id="grid" class="grid"></main>
-
-  <!-- 장바구니 패널 -->
-  <aside id="cartPanel" class="cart-panel hidden">
-    <div class="cart-header">
-      <h2>장바구니</h2>
-      <button id="closeCart">✕</button>
-    </div>
-    <div id="cartItems" class="cart-items"></div>
-    <div class="cart-footer">
-      <div class="cart-total">
-        총액 <strong id="cartTotal">0원</strong>
+  <!-- 스크롤해도 위에 고정되는 검색창 -->
+  <div class="search-sticky-wrap">
+    <div class="search-area">
+      <div class="search-input-wrap">
+        <input id="searchInput" type="text" autocomplete="off" placeholder="예: 나이키 신발, 무선이어폰, 텀블러..." />
+        <div id="autocompleteBox" class="autocomplete-box hidden"></div>
       </div>
+      <button id="searchBtn">검색</button>
+    </div>
+    <p id="statusMsg" class="status-msg"></p>
+  </div>
+
+  <!-- ================= 홈 화면 ================= -->
+  <div id="page-home" class="page">
+
+    <section class="hero">
+      <div class="hero-text">
+        <h2>진짜 상품 검색, 가짜 결제, 진짜 재미 🛍️</h2>
+        <p>네이버 쇼핑 실시간 상품으로 마음껏 장바구니에 담고 결제해보세요. 실제 배송은 안 돼요!</p>
+      </div>
+      <div class="hero-buttons">
+        <button id="rouletteOpenBtn" class="hero-cta gold">🎡 룰렛 돌리기</button>
+        <button id="gachaOpenBtn" class="hero-cta purple">🎁 가챠 뽑기</button>
+      </div>
+    </section>
+
+    <section id="dealsSection" class="section">
+      <h3 class="section-title">🔥 오늘의 특가</h3>
+      <div id="dealsGrid" class="grid"></div>
+    </section>
+
+    <section id="resultsSection" class="section hidden">
+      <h3 class="section-title" id="resultsTitle">검색결과</h3>
+      <div id="grid" class="grid"></div>
+    </section>
+
+    <section id="recommendSection" class="section hidden">
+      <h3 class="section-title">✨ 이런 상품은 어때요?</h3>
+      <div id="recommendGrid" class="grid"></div>
+    </section>
+
+  </div>
+
+  <!-- ================= 찜 화면 ================= -->
+  <div id="page-wishlist" class="page hidden">
+    <section class="section">
+      <h3 class="section-title">💖 찜한 상품</h3>
+      <p class="status-msg" id="wishEmptyMsg">아직 찜한 상품이 없어요. 상품 카드의 하트를 눌러보세요!</p>
+      <div id="wishGrid" class="grid"></div>
+    </section>
+    <section class="section">
+      <h3 class="section-title">🎁 내 컬렉션 (가챠로 뽑은 아이템)</h3>
+      <p class="status-msg" id="collectionEmptyMsg">아직 가챠로 뽑은 아이템이 없어요!</p>
+      <div id="collectionGrid" class="collection-grid"></div>
+    </section>
+  </div>
+
+  <!-- ================= 배송조회 화면 ================= -->
+  <div id="page-tracking" class="page hidden">
+    <section class="section">
+      <h3 class="section-title">📦 내 주문 / 배송조회</h3>
+      <p class="status-msg" id="trackingEmptyMsg">아직 주문한 상품(가짜)이 없어요. 홈에서 구매해보세요!</p>
+      <div id="orderList" class="order-list"></div>
+    </section>
+  </div>
+
+  <!-- ================= 장바구니 패널 ================= -->
+  <aside id="cartPanel" class="cart-panel hidden">
+    <div class="cart-header"><h2>장바구니</h2><button id="closeCart">✕</button></div>
+    <div id="cartItems" class="cart-items"></div>
+    <div class="coupon-apply">
+      <select id="couponSelect"><option value="">쿠폰 사용 안 함</option></select>
+    </div>
+    <div class="cart-footer">
+      <div class="cart-total-row"><span>상품 합계</span><span id="cartSubtotal">0원</span></div>
+      <div class="cart-total-row discount-row hidden" id="discountRow"><span>쿠폰 할인</span><span id="cartDiscount">-0원</span></div>
+      <div class="cart-total">총 결제금액 <strong id="cartTotal">0원</strong></div>
       <button id="checkoutBtn" class="checkout-btn">구매하기 (가짜)</button>
     </div>
   </aside>
   <div id="overlay" class="overlay hidden"></div>
 
-  <!-- 가짜 결제 완료 화면 -->
+  <!-- ================= 쿠폰함 패널 ================= -->
+  <aside id="couponPanel" class="cart-panel hidden">
+    <div class="cart-header"><h2>내 쿠폰함</h2><button id="closeCoupon">✕</button></div>
+    <div id="couponList" class="coupon-list"></div>
+  </aside>
+
+  <!-- ================= 상품 상세 모달 ================= -->
+  <div id="detailModal" class="detail-modal hidden">
+    <div class="detail-card">
+      <button id="closeDetail" class="modal-close-x">✕</button>
+      <div id="detailBody" class="detail-body"></div>
+    </div>
+  </div>
+
+  <!-- ================= 룰렛 모달 ================= -->
+  <div id="rouletteModal" class="receipt-modal hidden">
+    <div class="receipt-card roulette-card">
+      <button id="closeRoulette" class="modal-close-x">✕</button>
+      <h2>할인쿠폰 룰렛 🎡</h2>
+      <p class="receipt-sub">하루 한 번 돌릴 수 있어요</p>
+      <div class="wheel-wrap">
+        <div class="wheel-pointer">▼</div>
+        <div id="wheel" class="wheel"></div>
+      </div>
+      <button id="spinBtn" class="close-receipt-btn">돌리기!</button>
+      <p id="rouletteResultMsg" class="roulette-result"></p>
+    </div>
+  </div>
+
+  <!-- ================= 가챠 모달 ================= -->
+  <div id="gachaModal" class="receipt-modal hidden">
+    <div class="receipt-card">
+      <button id="closeGacha" class="modal-close-x">✕</button>
+      <h2>랜덤박스 가챠 🎁</h2>
+      <p class="receipt-sub">하루 한 번 뽑을 수 있어요</p>
+      <div class="gacha-box-wrap">
+        <div id="gachaBox" class="gacha-box">📦</div>
+      </div>
+      <button id="gachaBtn" class="close-receipt-btn">뽑기!</button>
+      <div id="gachaResult" class="gacha-result hidden">
+        <div id="gachaResultIcon" class="gacha-result-icon"></div>
+        <p id="gachaResultText" class="gacha-result-text"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 가짜 결제 완료 화면 ================= -->
   <div id="receiptModal" class="receipt-modal hidden">
     <div class="receipt-card">
       <div class="confetti" id="confetti"></div>
@@ -50,6 +160,22 @@
       <div id="receiptList" class="receipt-list"></div>
       <div class="receipt-total">총 결제금액(가짜) <strong id="receiptTotal">0원</strong></div>
       <button id="closeReceipt" class="close-receipt-btn">닫기</button>
+    </div>
+  </div>
+
+  <!-- ================= AI 추천 챗봇 ================= -->
+  <button id="aiChatOpenBtn" class="ai-fab" title="AI 추천 챗봇">🤖</button>
+  <div id="aiChatPanel" class="ai-chat-panel hidden">
+    <div class="cart-header">
+      <h2>🤖 뭐 살지 추천봇</h2>
+      <button id="closeAiChat">✕</button>
+    </div>
+    <div id="aiChatMessages" class="ai-chat-messages">
+      <div class="ai-msg ai-msg-bot">안녕하세요! "3만원으로 생일선물 뭐 살까?" 처럼 예산이나 상황을 알려주면 상품을 추천해드릴게요 🛍️</div>
+    </div>
+    <div class="ai-chat-input-row">
+      <input id="aiChatInput" type="text" placeholder="예: 5만원으로 캠핑용품 추천해줘" />
+      <button id="aiChatSendBtn">전송</button>
     </div>
   </div>
 
