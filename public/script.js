@@ -206,6 +206,8 @@ function resetHomeView() {
 async function search() {
   const query = searchInput.value.trim();
   if (!query) return;
+  clearTimeout(autocompleteTimer);
+  autocompleteToken++; // 이미 나간 자동완성 요청은 나중에 도착해도 무시하도록 표시
   autocompleteBox.classList.add("hidden");
 
   statusMsg.textContent = "검색 중...";
@@ -236,15 +238,19 @@ async function search() {
   }
 }
 
-// 자동완성: 입력 멈추고 300ms 후, 2글자 이상이면 미리보기 5개 fetch
+// 자동완성: 입력 멈추고 200ms 후, 2글자 이상이면 미리보기 5개 fetch
+// (검색이 이미 시작되면, 뒤늦게 도착하는 자동완성 응답은 무시해야 화면이 안 겹침)
 let autocompleteTimer = null;
+let autocompleteToken = 0;
 function scheduleAutocomplete() {
   clearTimeout(autocompleteTimer);
+  const myToken = ++autocompleteToken;
   const q = searchInput.value.trim();
   if (q.length < 2) { autocompleteBox.classList.add("hidden"); return; }
   autocompleteTimer = setTimeout(async () => {
     try {
       const items = await fetchProducts(q, { sort: "sim", display: 5 });
+      if (myToken !== autocompleteToken) return; // 그 사이에 검색이 실행되었거나 입력이 더 바뀜 → 무시
       if (items.length === 0) { autocompleteBox.classList.add("hidden"); return; }
       autocompleteBox.innerHTML = items
         .map((item) => `
@@ -262,9 +268,9 @@ function scheduleAutocomplete() {
       });
       autocompleteBox.classList.remove("hidden");
     } catch {
-      autocompleteBox.classList.add("hidden");
+      if (myToken === autocompleteToken) autocompleteBox.classList.add("hidden");
     }
-  }, 300);
+  }, 200);
 }
 
 // ---------------------------------------------------------
