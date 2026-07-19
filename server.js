@@ -47,7 +47,7 @@ function cleanTitle(title) {
 // ---------------------------------------------------------
 // 네이버 쇼핑 검색 (공통 함수 - /api/search 와 /api/recommend 둘 다 사용)
 // ---------------------------------------------------------
-async function searchNaver(query, { sort = "sim", display = 20 } = {}) {
+async function searchNaver(query, { sort = "sim", display = 100 } = {}) {
   const url = new URL("https://openapi.naver.com/v1/search/shop.json");
   url.searchParams.set("query", query);
   url.searchParams.set("display", String(display));
