@@ -36,8 +36,8 @@ const dealsGrid = document.getElementById("dealsGrid");
 const resultsSection = document.getElementById("resultsSection");
 const resultsTitle = document.getElementById("resultsTitle");
 const grid = document.getElementById("grid");
-const recommendSection = document.getElementById("recommendSection");
-const recommendGrid = document.getElementById("recommendGrid");
+const scrollSentinel = document.getElementById("scrollSentinel");
+const loadMoreStatus = document.getElementById("loadMoreStatus");
 
 const cartBtn = document.getElementById("cartBtn");
 const cartCount = document.getElementById("cartCount");
@@ -167,13 +167,14 @@ function buildCard(item, { showDiscount = false } = {}) {
   return card;
 }
 
-async function fetchProducts(query, { sort = "sim", display } = {}) {
+async function fetchProducts(query, { sort = "sim", display, start } = {}) {
   const params = new URLSearchParams({ query, sort });
   if (display) params.set("display", display);
+  if (start) params.set("start", start);
   const res = await fetch(`/api/search?${params.toString()}`);
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || "검색 실패");
-  return data.items;
+  return { items: data.items, total: data.total || 0 };
 }
 
 // ---------------------------------------------------------
@@ -181,7 +182,7 @@ async function fetchProducts(query, { sort = "sim", display } = {}) {
 // ---------------------------------------------------------
 async function loadDeals() {
   try {
-    const items = await fetchProducts("인기 선물 추천", { sort: "sim" });
+    const { items } = await fetchProducts("인기 선물 추천", { sort: "sim" });
     dealsGrid.innerHTML = "";
     items.slice(0, 8).forEach((item) => dealsGrid.appendChild(buildCard(item, { showDiscount: true })));
   } catch (err) {
@@ -198,9 +199,23 @@ function resetHomeView() {
   statusMsg.textContent = "";
   document.getElementById("dealsSection").classList.remove("hidden");
   resultsSection.classList.add("hidden");
-  recommendSection.classList.add("hidden");
   grid.innerHTML = "";
-  recommendGrid.innerHTML = "";
+  loadMoreStatus.classList.add("hidden");
+  noMoreResults = true; // 홈으로 돌아가면 스크롤 감지 멈춤
+}
+
+const SEARCH_PAGE_SIZE = 30;
+let currentSearchQuery = "";
+let currentSearchStart = 1;
+let isLoadingMore = false;
+let noMoreResults = true; // 검색 시작 전에는 스크롤 감지가 동작할 필요 없음
+let currentSearchTotal = 0;
+let shownProductKeys = new Set(); // 이미 화면에 나온 상품(링크 기준) - 중복 방지
+
+function appendDedupedItems(items) {
+  const fresh = items.filter((item) => !shownProductKeys.has(item.link));
+  fresh.forEach((item) => { shownProductKeys.add(item.link); grid.appendChild(buildCard(item)); });
+  return fresh.length;
 }
 
 async function search() {
@@ -213,30 +228,74 @@ async function search() {
   statusMsg.textContent = "검색 중...";
   document.getElementById("dealsSection").classList.add("hidden");
   resultsSection.classList.remove("hidden");
-  recommendSection.classList.add("hidden");
   grid.innerHTML = "";
-  recommendGrid.innerHTML = "";
+  loadMoreStatus.classList.add("hidden");
+
+  currentSearchQuery = query;
+  currentSearchStart = 1;
+  noMoreResults = false;
+  shownProductKeys = new Set();
 
   try {
-    const items = await fetchProducts(query, { sort: "sim" });
-    if (items.length === 0) { statusMsg.textContent = "결과가 없어요. 다른 검색어로 시도해보세요."; return; }
+    const { items, total } = await fetchProducts(query, { sort: "sim", display: SEARCH_PAGE_SIZE, start: currentSearchStart });
+    currentSearchTotal = total;
+    if (items.length === 0) {
+      statusMsg.textContent = "결과가 없어요. 다른 검색어로 시도해보세요.";
+      noMoreResults = true;
+      return;
+    }
 
-    statusMsg.textContent = `"${query}" 검색 결과 ${items.length}개`;
+    statusMsg.textContent = `"${query}" 검색 결과`;
     resultsTitle.textContent = `"${query}" 검색결과`;
-    items.forEach((item) => grid.appendChild(buildCard(item)));
+    appendDedupedItems(items);
 
-    const altItems = await fetchProducts(query, { sort: "asc" });
-    const shownTitles = new Set(items.map((i) => i.title));
-    const recs = altItems.filter((i) => !shownTitles.has(i.title)).slice(0, 8);
-    if (recs.length > 0) {
-      recommendSection.classList.remove("hidden");
-      recs.forEach((item) => recommendGrid.appendChild(buildCard(item, { showDiscount: true })));
+    // 첫 페이지부터 결과가 적거나, 이미 전체 개수만큼 다 보여줬으면 더 불러올 게 없음
+    if (items.length < SEARCH_PAGE_SIZE || currentSearchStart - 1 + items.length >= currentSearchTotal) {
+      noMoreResults = true;
     }
   } catch (err) {
     console.error(err);
     statusMsg.textContent = err.message || "서버에 연결할 수 없어요.";
+    noMoreResults = true;
   }
 }
+
+// 화면 맨 아래 sentinel이 보이면 자동으로 다음 페이지를 불러옴 (무한스크롤)
+async function loadMoreResults() {
+  if (isLoadingMore || noMoreResults || !currentSearchQuery) return;
+  isLoadingMore = true;
+  loadMoreStatus.textContent = "불러오는 중...";
+  loadMoreStatus.classList.remove("hidden");
+  try {
+    const nextStart = currentSearchStart + SEARCH_PAGE_SIZE;
+    const { items, total } = await fetchProducts(currentSearchQuery, { sort: "sim", display: SEARCH_PAGE_SIZE, start: nextStart });
+    currentSearchStart = nextStart;
+    currentSearchTotal = total || currentSearchTotal;
+    const addedCount = appendDedupedItems(items);
+
+    const reachedEnd = items.length < SEARCH_PAGE_SIZE || currentSearchStart - 1 + items.length >= currentSearchTotal;
+    if (reachedEnd || addedCount === 0) {
+      // addedCount === 0: 새로 받은 상품이 전부 중복이었다는 뜻 → 더 불러와도 의미 없으니 멈춤
+      noMoreResults = true;
+      loadMoreStatus.textContent = "마지막 상품까지 다 봤어요!";
+      setTimeout(() => loadMoreStatus.classList.add("hidden"), 1500);
+    } else {
+      loadMoreStatus.classList.add("hidden");
+    }
+  } catch (err) {
+    console.error(err);
+    loadMoreStatus.textContent = "불러오기 실패, 스크롤하면 다시 시도해요";
+  } finally {
+    isLoadingMore = false;
+  }
+}
+
+// 스크롤로 sentinel이 화면에 들어오면 다음 페이지 자동 로드
+const scrollObserver = new IntersectionObserver(
+  (entries) => { if (entries[0].isIntersecting) loadMoreResults(); },
+  { rootMargin: "400px" }
+);
+scrollObserver.observe(scrollSentinel);
 
 // 자동완성: 입력 멈추고 200ms 후, 2글자 이상이면 미리보기 5개 fetch
 // (검색이 이미 시작되면, 뒤늦게 도착하는 자동완성 응답은 무시해야 화면이 안 겹침)
@@ -249,7 +308,7 @@ function scheduleAutocomplete() {
   if (q.length < 2) { autocompleteBox.classList.add("hidden"); return; }
   autocompleteTimer = setTimeout(async () => {
     try {
-      const items = await fetchProducts(q, { sort: "sim", display: 5 });
+      const { items } = await fetchProducts(q, { sort: "sim", display: 5 });
       if (myToken !== autocompleteToken) return; // 그 사이에 검색이 실행되었거나 입력이 더 바뀜 → 무시
       if (items.length === 0) { autocompleteBox.classList.add("hidden"); return; }
       autocompleteBox.innerHTML = items

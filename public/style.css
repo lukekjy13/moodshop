@@ -183,6 +183,9 @@ body {
 .section-title { font-size: 17px; font-weight: 900; margin: 0 0 14px; }
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; }
 
+.load-more-wrap { display: flex; flex-direction: column; align-items: center; margin-top: 22px; gap: 4px; }
+#scrollSentinel { width: 100%; height: 1px; }
+
 .card {
   background: var(--card);
   border: 2px solid var(--border);

@@ -47,10 +47,11 @@ function cleanTitle(title) {
 // ---------------------------------------------------------
 // 네이버 쇼핑 검색 (공통 함수 - /api/search 와 /api/recommend 둘 다 사용)
 // ---------------------------------------------------------
-async function searchNaver(query, { sort = "sim", display = 100 } = {}) {
+async function searchNaver(query, { sort = "sim", display = 20, start = 1 } = {}) {
   const url = new URL("https://openapi.naver.com/v1/search/shop.json");
   url.searchParams.set("query", query);
   url.searchParams.set("display", String(display));
+  url.searchParams.set("start", String(start));
   url.searchParams.set("sort", sort);
 
   const naverRes = await fetch(url, {
@@ -67,7 +68,7 @@ async function searchNaver(query, { sort = "sim", display = 100 } = {}) {
   }
 
   const data = await naverRes.json();
-  return data.items.map((item, i) => ({
+  const items = data.items.map((item, i) => ({
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}-${i}`,
     title: cleanTitle(item.title),
     image: item.image,
@@ -75,23 +76,31 @@ async function searchNaver(query, { sort = "sim", display = 100 } = {}) {
     mall: item.mallName,
     link: item.link,
   }));
+  return { items, total: data.total };
 }
 
 // 검색 결과 + 자동완성 둘 다 여기서 처리
 // display를 작게 요청하면(예: 5) 자동완성용으로 빠르게 씀
+// start는 "더 보기"용 페이지네이션 (네이버 API는 최대 1000까지 지원)
 app.get("/api/search", async (req, res) => {
   const query = req.query.query;
   const sort = ["sim", "asc", "dsc"].includes(req.query.sort) ? req.query.sort : "sim";
   let display = parseInt(req.query.display, 10);
-  if (!Number.isFinite(display) || display < 1 || display > 30) display = 20;
+  if (!Number.isFinite(display) || display < 1 || display > 100) display = 30;
+  let start = parseInt(req.query.start, 10);
+  if (!Number.isFinite(start) || start < 1) start = 1;
+  if (start > 1000) {
+    // 네이버 API는 start가 1000을 넘으면 더 이상 지원 안 함 → 조용히 1페이지로 되돌리지 않고 "더 없음"으로 응답
+    return res.json({ items: [], total: 0 });
+  }
 
   if (!query) {
     return res.status(400).json({ error: "query 파라미터가 필요해요" });
   }
 
   try {
-    const items = await searchNaver(query, { sort, display });
-    res.json({ items });
+    const { items, total } = await searchNaver(query, { sort, display, start });
+    res.json({ items, total });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message || "서버 내부 오류가 발생했어요" });
@@ -160,7 +169,7 @@ app.post("/api/recommend", async (req, res) => {
     const groups = await Promise.all(
       keywords.map(async (kw) => {
         try {
-          const items = await searchNaver(kw, { display: 6 });
+          const { items } = await searchNaver(kw, { display: 6 });
           return { keyword: kw, items };
         } catch {
           return { keyword: kw, items: [] };
